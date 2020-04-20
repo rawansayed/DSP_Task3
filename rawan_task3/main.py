@@ -14,7 +14,13 @@ from PyQt5.QtCore import Qt
 from pyqtgraph import PlotWidget, plot
 import librosa as lr
 from Task4 import Ui_MainWindow
-
+import os
+import glob
+from pathlib import Path
+from scipy.io import wavfile
+from imagededup.methods import PHash
+from imagededup.utils import plot_duplicates
+from difflib import SequenceMatcher
 class ApplicationWindow(QtWidgets.QMainWindow):
 
     music2: object
@@ -26,7 +32,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.pen=(145,0,145)
         #upload
         self.flag1=0
+        self.mp3towav()
+        self.spectrogramall()
         self.ui.actionLoad.triggered.connect(self.upload)
+        self.hashingall()
+
         #play
         # self.ui.play1.clicked.connect(lambda: self.playAudio(self.music1))
         # self.ui.play2.clicked.connect(lambda: self.playAudio(self.music2))
@@ -45,18 +55,42 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.comparisontable.setItem(0,0,QTableWidgetItem("Song 1"))
         self.ui.comparisontable.setItem(0,1, QTableWidgetItem("Similarity Check"))
 
+    def mp3towav(self):
+        pass
+        # # files
+        # lst = glob.glob("/home/menna/Songs/*.mp3")
+        # print(lst)
+        # for file in lst:
+        #     # convert wav to mp3
+        #     os.system(f"""ffmpeg -i {file} -acodec pcm_u8 -ar 22050 {file[:-4]}.wav""")
+    def spectrogramall(self):
+        pass
+        # path = Path('/home/menna/Songs').glob('**/*.wav')
+        #
+        # wavs = [str(wavf) for wavf in path if wavf.is_file()]
+        # wavs.sort()
+        # number_of_files = len(wavs)
+        # spk_ID = [wavs[i].split('/')[-1].lower() for i in range(number_of_files)]
+        # for i in range(number_of_files):
+        #     wavfile, freq = lr.load(wavs[i],duration=60.0)
+        #     frequencies, times, spectrogram = signal.spectrogram(wavfile,freq)
+        #     plt.pcolormesh(times, frequencies, np.log(spectrogram))
+        #     plt.xlabel('time')
+        #     plt.ylabel('freq')
+        #     plt.savefig("/home/menna/DSP_Task3/songsspec/{}.png".format(spk_ID[i][:-4]), bbox_inches='tight', dpi=300, frameon='false')
     def playAudio(self, song):
         sd.play(song, self.freq)
 
 
     def upload(self):
-        self.fileName = QFileDialog.getOpenFileName(None, "Load", "D:/BIOMEDICAL ENGINEERING/3rd/2nd semester/dsp/tasks/sbe309-2020-task2-team__12","Track(*.wav)")
-        self.t1 = 20 * 1000  # Works in milliseconds
-        self.t2 = 60 * 1000
-        self.newAudio = AudioSegment.from_wav(self.fileName[0])
-        self.newAudio = self.newAudio[self.t1: self.t2]
-        self.newAudio.export('out.wav', format="wav")
-        self.wavefile2, self.freq = lr.load('out.wav')
+        self.fileName = QFileDialog.getOpenFileName(None, "Load", "/home/menna/Songs","Track(*.wav)")
+        #self.t1 = 20 * 1000  # Works in milliseconds
+        #self.t2 = 60 * 1000
+        # self.newAudio = AudioSegment.from_mp3(self.fileName[0])
+        # self.newAudio.export('out.wav', format="wav")
+        #self.newAudio = self.newAudio[: self.t2]
+
+        self.wavefile2, self.freq = lr.load(self.fileName[0],duration=60.0)
         self.time = np.arange(0, len(self.wavefile2)) / self.freq
         # print(time)
         if self.flag1 == 0:
@@ -82,13 +116,55 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # self.ui.music2.plot(self.time, self.result)
 
     def spectrogram(self,input):
-        fig = plt.gcf()
-        frequencies,times, spectrogram = signal.spectrogram(input, self.freq/2)
+        frequencies,times, spectrogram = signal.spectrogram(input, self.freq)
         plt.pcolormesh(times, frequencies, np.log(spectrogram))
-        plt.ylabel('Frequency [Hz]')
-        plt.xlabel('Time [sec]')
-        plt.savefig('spectrogram.png')
-        plt.show()
+        plt.ylabel('freq')
+        plt.xlabel('time')
+        plt.savefig('spectrogram.png', bbox_inches='tight', dpi=300, frameon='false')
+        #plt.show()
+        self.printhash()
+    def hashingall(self):
+        pass
+        # phasher = PHash()
+        # encodings = phasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
+        # print(encodings)
+        # with open('hash.txt', 'w') as f:
+        #     for key, value in encodings.items():
+        #         f.write('%s:%s\n' % (key, value))
+        # duplicates = phasher.find_duplicates(encoding_map=encodings, scores=True)
+        #print(duplicates)
+        # a_file=open('hash.txt','w')
+        # for row in duplicates:
+        #     np.savetxt(a_file,row)
+        # a_file.close()
+        # plot_duplicates(image_dir='/home/menna/DSP_Task3/songsspece',
+        #                                    duplicate_map=duplicates,
+        #                                     filename='adele_million_years_ago_10.png')
+    def printhash(self):
+        data = dict()
+        with open('hash.txt') as raw_data:
+            for item in raw_data:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    data[key] = value
+                else:
+                    pass  # deal with bad lines of text here
+        #print(data)
+        phasher = PHash()
+        encoding = phasher.encode_image(image_file='spectrogram.png')
+        print(encoding)
+        # duplicates = phasher.find_duplicates(encoding_map=data,max_distance_threshold=12, scores=True)
+
+        #print(duplicates)
+        for i,j in data.items():
+
+            print(i,self.similar(encoding,j))
+
+    # string similraity check
+
+
+    def similar(self,a, b):
+        return SequenceMatcher(None, a, b).ratio()
 
 
 def main():
