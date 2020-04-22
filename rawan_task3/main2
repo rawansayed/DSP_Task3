@@ -31,16 +31,15 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.pen=(145,0,145)
-        #upload
-        self.flag1=0
-        self.mp3towav()
-        self.spectrogramall()
-        self.ui.actionLoad.triggered.connect(self.upload)
-        self.hashingall()
 
+        #convert
+        self.mp3towav()
+        self.spectrogram_hashall()
+
+        # upload
+        self.flag1 = 0
+        self.ui.actionLoad.triggered.connect(self.upload)
         #play
-        # self.ui.play1.clicked.connect(lambda: self.playAudio(self.music1))
-        # self.ui.play2.clicked.connect(lambda: self.playAudio(self.music2))
         self.ui.play3.clicked.connect(lambda: self.playAudio(self.result))
         #slider ratio
         self.ui.slider1.setMaximum(100)
@@ -50,13 +49,13 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.slider1.valueChanged.connect(self.ratio)
         #mix
         self.ui.mix.clicked.connect(self.mix)
-        self.ui.compare.clicked.connect(self.compare)
+
         #comparison
         self.ui.comparisontable.setColumnCount(2)
         self.ui.comparisontable.setRowCount(10)
         self.ui.comparisontable.setItem(0,0,QTableWidgetItem("Song 1"))
         self.ui.comparisontable.setItem(0,1, QTableWidgetItem("Similarity Check"))
-
+        self.ui.compare.clicked.connect(self.compare)
     def mp3towav(self):
         pass
         # # files
@@ -65,6 +64,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # for file in lst:
         #     # convert wav to mp3
         #     os.system(f"""ffmpeg -i {file} -acodec pcm_u8 -ar 22050 {file[:-4]}.wav""")
+    #we used this fn at first to generate spectrogram images
     def spectrogramall(self):
         pass
         # path = Path('/home/menna/Songs').glob('**/*.wav')
@@ -80,28 +80,41 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #     plt.xlabel('time')
         #     plt.ylabel('freq')
         #     plt.savefig("/home/menna/DSP_Task3/songsspec/{}.png".format(spk_ID[i][:-4]), bbox_inches='tight', dpi=300, frameon='false')
+    #then we used this fn o generate sepectrogram as arrays ans phash them
+    def spectrogram_hashall(self):
+        pass
+        # phasher = PHash()
+        # path = Path('/home/menna/Songs').glob('**/*.wav')
+        # data = dict()
+        # wavs = [str(wavf) for wavf in path if wavf.is_file()]
+        # wavs.sort()
+        # number_of_files = len(wavs)
+        # spk_ID = [wavs[i].split('/')[-1].lower() for i in range(number_of_files)]
+        # for i in range(number_of_files):
+        #     wavfile, freq = lr.load(wavs[i],duration=60.0)
+        #     spectrogram=lr.amplitude_to_db(np.abs(lr.stft(wavfile)), ref=np.max)
+        #     encoding = phasher.encode_image(image_array=spectrogram)
+        #     data[spk_ID[i][:-4]] = encoding
+        # with open('arrayhash.txt', 'w') as f:
+        #     for key, value in data.items():
+        #         f.write('%s:%s\n' % (key, value))
+
+
+
     def playAudio(self, song):
         sd.play(song, self.freq)
 
 
     def upload(self):
         self.fileName = QFileDialog.getOpenFileName(None, "Load", "/home/menna/Songs","Track(*.wav)")
-        #self.t1 = 20 * 1000  # Works in milliseconds
-        #self.t2 = 60 * 1000
-        # self.newAudio = AudioSegment.from_mp3(self.fileName[0])
-        # self.newAudio.export('out.wav', format="wav")
-        #self.newAudio = self.newAudio[: self.t2]
-
+        print(self.fileName)
         self.wavefile2, self.freq = lr.load(self.fileName[0],duration=60.0)
         self.time = np.arange(0, len(self.wavefile2)) / self.freq
-        # print(time)
         if self.flag1 == 0:
             self.music1=self.wavefile2
-            # self.ui.music1.plot(self.time, self.wavefile2,pen=self.pen)
             self.flag1 =1
         else:
             self.music2=self.wavefile2
-            # self.ui.music2.plot(self.time, self.wavefile2,pen=self.pen)
             self.flag1 = 0
 
     def ratio(self):
@@ -112,110 +125,48 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def mix(self):
         self.result = self.ratio1 * self.music1 + self.ratio2 * self.music2
-        print(self.result)
-        self.spectrogram(self.result)
-        # self.ui.music2.clear()
-        # self.ui.music2.plot(self.time, self.result)
+        self.Spectrogram(self.result)
 
-    def spectrogram(self,input):
-        frequencies,times, spectrogram = signal.spectrogram(input, self.freq)
-        plt.pcolormesh(times, frequencies, np.log(spectrogram))
-        plt.ylabel('freq')
-        plt.xlabel('time')
-        plt.savefig('spectrogram.png', bbox_inches='tight', dpi=300, frameon='false')
+
+    def Spectrogram(self,input):
+        self.spectrogram=lr.amplitude_to_db(np.abs(lr.stft(input)), ref=np.max)
+        ###used this code to generate spec image to make sure that its the same as the original ones
+        # frequencies,times, self.spectrogram = signal.spectrogram(input, self.freq)
+        # plt.pcolormesh(times, frequencies, np.log(self.spectrogram))
+        # plt.ylabel('freq')
+        # plt.xlabel('time')
+        # plt.savefig('spectrogram.png', bbox_inches='tight', dpi=300, frameon='false')
         #plt.show()
-    def hashingall(self):
-        pass
-        # phasher = PHash()
-        # pencodings = phasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
-        # with open('hash.txt', 'w') as f:
-        #     for key, value in pencodings.items():
-        #         f.write('%s:%s\n' % (key, value))
-        # dhasher = DHash()
-        # dencodings = dhasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
-        # with open('hash1.txt', 'w') as f:
-        #     for key, value in dencodings.items():
-        #         f.write('%s:%s\n' % (key, value))
-        # whasher = WHash()
-        # wencodings = whasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
-        # with open('hash2.txt', 'w') as f:
-        #     for key, value in wencodings.items():
-        #         f.write('%s:%s\n' % (key, value))
-        # ahasher = AHash()
-        # aencodings = ahasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
-        # with open('hash3.txt', 'w') as f:
-        #     for key, value in aencodings.items():
-        #         f.write('%s:%s\n' % (key, value))
 
-        # print(encodings)
-
-        # duplicates = phasher.find_duplicates(encoding_map=encodings, scores=True)
-        #print(duplicates)
-        # a_file=open('hash.txt','w')
-        # for row in duplicates:
-        #     np.savetxt(a_file,row)
-        # a_file.close()
-        # plot_duplicates(image_dir='/home/menna/DSP_Task3/songsspece',
-        #                                    duplicate_map=duplicates,
-        #                                     filename='adele_million_years_ago_10.png')
     def compare(self):
         if self.ui.Hash.isChecked():
             self.hash()
+        elif self.ui.MainFeatures.isChecked():
+            pass
+        elif self.ui.Both.isChecked():
+            pass
     def hash(self):
+    #to read the hash file
         data = dict()
-        with open('hash.txt') as raw_data:
+        with open('arrayhash.txt') as raw_data:
             for item in raw_data:
                 if ':' in item:
                     key, value = item.split(':', 1)
                     data[key] = value
                 else:
                     pass  # deal with bad lines of text here
-        #print(data)
+
+        #hash the spec of the new song
         phasher = PHash()
-        encoding = phasher.encode_image(image_file='spectrogram.png')
-        # data2 = dict()
-        # with open('hash1.txt') as raw_data:
-        #     for item in raw_data:
-        #         if ':' in item:
-        #             key, value = item.split(':', 1)
-        #             data2[key] = value
-        #         else:
-        #             pass  # deal with bad lines of text here
-        # # print(data)
-        # dhasher = DHash()
-        # encoding2 = dhasher.encode_image(image_file='spectrogram.png')
-        # data3 = dict()
-        # with open('hash2.txt') as raw_data:
-        #     for item in raw_data:
-        #         if ':' in item:
-        #             key, value = item.split(':', 1)
-        #             data3[key] = value
-        #         else:
-        #             pass  # deal with bad lines of text here
-        # # print(data)
-        # ahasher = AHash()
-        # encoding3 = ahasher.encode_image(image_file='spectrogram.png')
-        # data4 = dict()
-        # with open('hash3.txt') as raw_data:
-        #     for item in raw_data:
-        #         if ':' in item:
-        #             key, value = item.split(':', 1)
-        #             data4[key] = value
-        #         else:
-        #             pass  # deal with bad lines of text here
-        # # print(data)
-        # whasher = WHash()
-        # encoding4 = whasher.encode_image(image_file='spectrogram.png')
-        # data=dict()
-
+        encoding1 = phasher.encode_image(image_array=self.spectrogram)
+        #compare btw the hashes
         for i,j in data.items():
-            data[i]=str(self.similar(encoding,j))
-            #data[i] = str((self.similar(encoding1,data1[i]) + self.similar(encoding2,data2[i]) + self.similar(encoding3,data3[i])+ self.similar(encoding4,data4[i]))/4)
-
+            data[i] = str(self.similar(encoding1,j))
+        #ordering the results
         sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
         y=1
+        #showing the results
         for i,j in sorted_d.items():
-            print(y)
             if y==11:
                 break
             else:
@@ -254,4 +205,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
