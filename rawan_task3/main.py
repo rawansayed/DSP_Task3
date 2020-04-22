@@ -18,9 +18,10 @@ import os
 import glob
 from pathlib import Path
 from scipy.io import wavfile
-from imagededup.methods import PHash
+from imagededup.methods import PHash,DHash,WHash,AHash
 from imagededup.utils import plot_duplicates
 from difflib import SequenceMatcher
+import operator
 class ApplicationWindow(QtWidgets.QMainWindow):
 
     music2: object
@@ -49,6 +50,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.ui.slider1.valueChanged.connect(self.ratio)
         #mix
         self.ui.mix.clicked.connect(self.mix)
+        self.ui.compare.clicked.connect(self.compare)
         #comparison
         self.ui.comparisontable.setColumnCount(2)
         self.ui.comparisontable.setRowCount(10)
@@ -122,15 +124,31 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         plt.xlabel('time')
         plt.savefig('spectrogram.png', bbox_inches='tight', dpi=300, frameon='false')
         #plt.show()
-        self.printhash()
     def hashingall(self):
         pass
         # phasher = PHash()
-        # encodings = phasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
-        # print(encodings)
+        # pencodings = phasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
         # with open('hash.txt', 'w') as f:
-        #     for key, value in encodings.items():
+        #     for key, value in pencodings.items():
         #         f.write('%s:%s\n' % (key, value))
+        # dhasher = DHash()
+        # dencodings = dhasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
+        # with open('hash1.txt', 'w') as f:
+        #     for key, value in dencodings.items():
+        #         f.write('%s:%s\n' % (key, value))
+        # whasher = WHash()
+        # wencodings = whasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
+        # with open('hash2.txt', 'w') as f:
+        #     for key, value in wencodings.items():
+        #         f.write('%s:%s\n' % (key, value))
+        # ahasher = AHash()
+        # aencodings = ahasher.encode_images(image_dir='/home/menna/DSP_Task3/songsspece')
+        # with open('hash3.txt', 'w') as f:
+        #     for key, value in aencodings.items():
+        #         f.write('%s:%s\n' % (key, value))
+
+        # print(encodings)
+
         # duplicates = phasher.find_duplicates(encoding_map=encodings, scores=True)
         #print(duplicates)
         # a_file=open('hash.txt','w')
@@ -140,28 +158,74 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # plot_duplicates(image_dir='/home/menna/DSP_Task3/songsspece',
         #                                    duplicate_map=duplicates,
         #                                     filename='adele_million_years_ago_10.png')
-    def printhash(self):
-        data = dict()
+    def compare(self):
+        if self.ui.Hash.isChecked():
+            self.hash()
+    def hash(self):
+        data1 = dict()
         with open('hash.txt') as raw_data:
             for item in raw_data:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    data[key] = value
+                    data1[key] = value
                 else:
                     pass  # deal with bad lines of text here
         #print(data)
         phasher = PHash()
-        encoding = phasher.encode_image(image_file='spectrogram.png')
-        print(encoding)
-        # duplicates = phasher.find_duplicates(encoding_map=data,max_distance_threshold=12, scores=True)
+        encoding1 = phasher.encode_image(image_file='spectrogram.png')
+        data2 = dict()
+        with open('hash1.txt') as raw_data:
+            for item in raw_data:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    data2[key] = value
+                else:
+                    pass  # deal with bad lines of text here
+        # print(data)
+        dhasher = DHash()
+        encoding2 = dhasher.encode_image(image_file='spectrogram.png')
+        data3 = dict()
+        with open('hash2.txt') as raw_data:
+            for item in raw_data:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    data3[key] = value
+                else:
+                    pass  # deal with bad lines of text here
+        # print(data)
+        ahasher = AHash()
+        encoding3 = ahasher.encode_image(image_file='spectrogram.png')
+        data4 = dict()
+        with open('hash3.txt') as raw_data:
+            for item in raw_data:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    data4[key] = value
+                else:
+                    pass  # deal with bad lines of text here
+        # print(data)
+        whasher = WHash()
+        encoding4 = whasher.encode_image(image_file='spectrogram.png')
+        data=dict()
 
-        #print(duplicates)
-        for i,j in data.items():
+        for i,j in data1.items():
+            print(i,self.similar(encoding1,data1[i]))
+            print("d",self.similar(encoding1, data2[i]))
+            print("a",self.similar(encoding1, data3[i]))
+            print("w",self.similar(encoding1, data4[i]))
 
-            print(i,self.similar(encoding,j))
+            data[i] = str((self.similar(encoding1,data1[i]) + self.similar(encoding2,data2[i]) + self.similar(encoding3,data3[i])+ self.similar(encoding4,data4[i]))/4)
 
-    # string similraity check
-
+        sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
+        y=1
+        for i,j in sorted_d.items():
+            print(y)
+            if y==11:
+                break
+            else:
+                self.ui.comparisontable.setItem(y, 0, QTableWidgetItem(i))
+                self.ui.comparisontable.setItem(y, 1, QTableWidgetItem(j))
+            y=y+1
 
     def similar(self,a, b):
         return SequenceMatcher(None, a, b).ratio()
