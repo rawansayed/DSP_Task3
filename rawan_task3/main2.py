@@ -35,7 +35,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #convert
         self.mp3towav()
         self.spectrogram_hashall()
-
+        self.spectrogram_featureall()
         # upload
         self.flag1 = 0
         self.ui.actionLoad.triggered.connect(self.upload)
@@ -99,8 +99,38 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #     for key, value in data.items():
         #         f.write('%s:%s\n' % (key, value))
 
-
-
+    def spectrogram_featureall(self):
+        pass
+        # path = Path('/home/menna/Songs').glob('**/*.wav')
+        # data1 = dict()
+        # data2 = dict()
+        # data3 = dict()
+        # wavs = [str(wavf) for wavf in path if wavf.is_file()]
+        # wavs.sort()
+        # number_of_files = len(wavs)
+        # spk_ID = [wavs[i].split('/')[-1].lower() for i in range(number_of_files)]
+        # for i in range(number_of_files):
+        #     print("Ss")
+        #     wavfile, freq = lr.load(wavs[i],duration=60.0)
+        #     S = np.abs(lr.stft(wavfile))
+        #     centroid=self.mainfeatureSelect(S, freq,'spectralCentroid')
+        #     rolloff=self.mainfeatureSelect(S, freq, 'spectralRolloff')
+        #     mfccs=self.mainfeatureSelect(S, freq, 'mfccs')
+        #     data1[spk_ID[i][:-4]] = centroid
+        #     data2[spk_ID[i][:-4]] = rolloff
+        #     data3[spk_ID[i][:-4]] = mfccs
+        # print("SS")
+        #     spectral_bandwidth=self.mainfeatureSelect(S, freq, 'spectral_bandwidth')
+        #     data1[spk_ID[i][:-4]] = spectral_bandwidth
+        # with open('spectral_bandwidth.txt', 'w') as f:
+        #     for key, value in data1.items():
+        #         f.write('%s:%s\n' % (key, value))
+        # with open('rolloff.txt', 'w') as f:
+        #     for key, value in data2.items():
+        #         f.write('%s:%s\n' % (key, value))
+        # with open('mfccs.txt', 'w') as f:
+        #     for key, value in data3.items():
+        #         f.write('%s:%s\n' % (key, value))
     def playAudio(self, song):
         sd.play(song, self.freq)
 
@@ -130,6 +160,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def Spectrogram(self,input):
         self.spectrogram=lr.amplitude_to_db(np.abs(lr.stft(input)), ref=np.max)
+        self.spectrogram1 =np.abs(lr.stft(input))
+
         ###used this code to generate spec image to make sure that its the same as the original ones
         # frequencies,times, self.spectrogram = signal.spectrogram(input, self.freq)
         # plt.pcolormesh(times, frequencies, np.log(self.spectrogram))
@@ -142,26 +174,110 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         if self.ui.Hash.isChecked():
             self.hash()
         elif self.ui.MainFeatures.isChecked():
-            self.mainfeatureSelect(self.spectrogram, self.freq, mode="spectralCentroid")
+            self.mainfeatureSelect(self.spectrogram1, self.freq, mode="mfccs")
         elif self.ui.Both.isChecked():
             pass
     def hash(self):
-    #to read the hash file
-        data = dict()
+        # to read the hash file
+        data1 = dict()
         with open('arrayhash.txt') as raw_data:
             for item in raw_data:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    data[key] = value
+                    data1[key] = value
                 else:
                     pass  # deal with bad lines of text here
 
-        #hash the spec of the new song
+        data2 = dict()
+        with open('arrayhashd.txt') as raw_data:
+            for item in raw_data:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    data2[key] = value
+                else:
+                    pass  # deal with bad lines of text here
+
+        # hash the spec of the new song
         phasher = PHash()
         encoding1 = phasher.encode_image(image_array=self.spectrogram)
-        #compare btw the hashes
+
+        dhasher = DHash()
+        encoding2 = dhasher.encode_image(image_array=self.spectrogram)
+        # compare btw the hashes
+        data = dict()
+        for i, j in data1.items():
+            data[i] = str((self.similar(encoding1, data1[i]) + self.similar(encoding2, data2[i])) / 2.0)
+        # ordering the results
+        sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
+        y = 1
+        # showing the results
+        for i, j in sorted_d.items():
+            if y == 11:
+                break
+            else:
+                self.ui.comparisontable.setItem(y, 0, QTableWidgetItem(i))
+                self.ui.comparisontable.setItem(y, 1, QTableWidgetItem(j))
+            y = y + 1
+    def similar(self,a, b):
+        return SequenceMatcher(None, a, b).ratio()
+
+    def mainfeatureSelect(self,spectogram, freq, mode):
+        phasher =PHash()
+        data = dict()
+
+        if mode == "spectralCentroid":
+            with open('centroid.txt') as raw_data:
+                for item in raw_data:
+                    if ':' in item:
+                        key, value = item.split(':', 1)
+                        data[key] = value
+                    else:
+                        pass  # deal with bad lines of text here
+            featureExtraction = lr.feature.spectral_centroid(S=spectogram, sr=freq)
+        elif mode == "spectralRolloff":
+            with open('rolloff.txt') as raw_data:
+                for item in raw_data:
+                    if ':' in item:
+                        key, value = item.split(':', 1)
+                        data[key] = value
+                    else:
+                        pass  # deal with bad lines of text here
+            # spectral_rolloff
+            featureExtraction = lr.feature.spectral_rolloff(S=spectogram, sr=freq)
+            # print(np.mean(featureExtraction))
+        elif mode == "mfccs":
+            with open('mfccs.txt') as raw_data:
+                for item in raw_data:
+                    if ':' in item:
+                        key, value = item.split(':', 1)
+                        data[key] = value
+                    else:
+                        pass  # deal with bad lines of text here
+            # mfccs
+            featureExtraction = lr.feature.mfcc(S=spectogram, sr=freq)
+            # print(np.mean(featureExtraction.shape))
+        elif mode == "pitches":
+            with open('rms.txt') as raw_data:
+                for item in raw_data:
+                    if ':' in item:
+                        key, value = item.split(':', 1)
+                        data[key] = value
+                    else:
+                        pass  # deal with bad lines of text here
+            featureExtraction, magnitudes = lr.piptrack(S=spectogram, sr=freq, fmin=20, fmax=20000)
+            print(np.shape(featureExtraction))
+        elif mode== 'spectral_bandwidth':
+            with open('spectral_bandwidth.txt') as raw_data:
+                for item in raw_data:
+                    if ':' in item:
+                        key, value = item.split(':', 1)
+                        data[key] = value
+                    else:
+                        pass  # deal with bad lines of text here
+            featureExtraction=lr.feature.spectral_bandwidth(S=spectogram)
+        feature=phasher.encode_image(image_array=featureExtraction)
         for i,j in data.items():
-            data[i] = str(self.similar(encoding1,j))
+            data[i] = str(self.similar(feature,j))
         #ordering the results
         sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
         y=1
@@ -174,24 +290,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 self.ui.comparisontable.setItem(y, 1, QTableWidgetItem(j))
             y=y+1
 
-    def similar(self,a, b):
-        return SequenceMatcher(None, a, b).ratio()
-
-    def mainfeatureSelect(self,spectogram, freq, mode):
-        if mode == "spectralCentroid":
-            # spectral_cenroids
-            featureExtraction = lr.feature.spectral_centroid(S=spectogram, sr=freq)
-        elif mode == "spectralRolloff":
-            # spectral_rolloff
-            featureExtraction = lr.feature.spectral_rolloff(S=S, sr=freq)
-            # print(np.mean(featureExtraction))
-        elif mode == "mfccs":
-            # mfccs
-            featureExtraction = lr.feature.mfcc(S=spectrogram, sr=freq)
-            # print(np.mean(featureExtraction.shape))
-        featureExtraction.tostring()
+        return feature
         # Pitch Tracing
-        # pitches, magnitudes = lr.piptrack(y=wavefile, sr=freq, fmin=150, fmax=800)
+
         # print(pitches)
 
 
