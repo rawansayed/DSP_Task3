@@ -2,8 +2,8 @@ import sys
 import sounddevice as sd
 from sounddevice import play
 from pydub import AudioSegment
-from PyQt5.QtWidgets import (QMainWindow, QTextEdit, QAction, QFileDialog,QTableWidget,QTableWidgetItem
-                             ,QApplication, QCheckBox, QApplication, QHBoxLayout, QWidget,QMessageBox)
+from PyQt5.QtWidgets import (QMainWindow, QTextEdit, QAction, QFileDialog, QTableWidget, QTableWidgetItem
+, QApplication, QCheckBox, QApplication, QHBoxLayout, QWidget, QMessageBox)
 import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,54 +17,58 @@ from Task4 import Ui_MainWindow
 import os
 import glob
 from pathlib import Path
-from scipy.io import wavfile
-from imagededup.methods import PHash,DHash,WHash,AHash
+from imagededup.methods import PHash, DHash, WHash, AHash
 from imagededup.utils import plot_duplicates
 from difflib import SequenceMatcher
 import operator
-class ApplicationWindow(QtWidgets.QMainWindow):
+from sklearn.preprocessing import normalize
+import pkg_resources.py2_warn
 
+
+class ApplicationWindow(QtWidgets.QMainWindow):
     music2: object
 
     def __init__(self):
         super(ApplicationWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.pen=(145,0,145)
+        self.pen = (145, 0, 145)
 
-        #convert
-        self.mp3towav()
-        self.spectrogram_hashall()
-        self.spectrogram_featureall()
+        # convert
+        # self.mp3towav()
+        # self.spectrogram_hashall()
+        # self.spectrogram_featureall()
         # upload
         self.flag1 = 0
         self.ui.actionLoad.triggered.connect(self.upload)
-        #play
+        # play
         self.ui.play3.clicked.connect(lambda: self.playAudio(self.result))
-        #slider ratio
+        # slider ratio
         self.ui.slider1.setMaximum(100)
         self.ui.slider1.setMinimum(0)
         self.ui.slider1.setValue(100)
         self.ui.slider1.setSingleStep(1)
         self.ui.slider1.valueChanged.connect(self.ratio)
-        #mix
+        # mix
         self.ui.mix.clicked.connect(self.mix)
 
-        #comparison
+        # comparison
         self.ui.comparisontable.setColumnCount(2)
         self.ui.comparisontable.setRowCount(10)
-        self.ui.comparisontable.setItem(0,0,QTableWidgetItem("Song 1"))
-        self.ui.comparisontable.setItem(0,1, QTableWidgetItem("Similarity Check"))
+        self.ui.comparisontable.setItem(0, 0, QTableWidgetItem("Song 1"))
+        self.ui.comparisontable.setItem(0, 1, QTableWidgetItem("Similarity Check"))
         self.ui.compare.clicked.connect(self.compare)
+
     def mp3towav(self):
         pass
         # # files
-        # lst = glob.glob("/home/menna/Songs/*.mp3")
+        # lst = glob.glob("C:/Users/FADY/PycharmProjects/spectogram/Songs/*.mp3")
         # print(lst)
         # for file in lst:
         #     # convert wav to mp3
         #     os.system(f"""ffmpeg -i {file} -acodec pcm_u8 -ar 22050 {file[:-4]}.wav""")
-    #we used this fn at first to generate spectrogram images
+
+    # we used this fn at first to generate spectrogram images
     def spectrogramall(self):
         pass
         # path = Path('/home/menna/Songs').glob('**/*.wav')
@@ -80,7 +84,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #     plt.xlabel('time')
         #     plt.ylabel('freq')
         #     plt.savefig("/home/menna/DSP_Task3/songsspec/{}.png".format(spk_ID[i][:-4]), bbox_inches='tight', dpi=300, frameon='false')
-    #then we used this fn o generate sepectrogram as arrays ans phash them
+
+    # then we used this fn o generate sepectrogram as arrays ans phash them
     def spectrogram_hashall(self):
         pass
         # phasher = PHash()
@@ -114,15 +119,17 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #     wavfile, freq = lr.load(wavs[i],duration=60.0)
         #     S = np.abs(lr.stft(wavfile))
         #     centroid=self.mainfeatureSelect(S, freq,'spectralCentroid')
+        #     normalized_data = normalize(centroid)
+
         #     rolloff=self.mainfeatureSelect(S, freq, 'spectralRolloff')
         #     mfccs=self.mainfeatureSelect(S, freq, 'mfccs')
-        #     data1[spk_ID[i][:-4]] = centroid
+        #     data1[spk_ID[i][:-4]] = normalized_data
         #     data2[spk_ID[i][:-4]] = rolloff
         #     data3[spk_ID[i][:-4]] = mfccs
         # print("SS")
         #     spectral_bandwidth=self.mainfeatureSelect(S, freq, 'spectral_bandwidth')
         #     data1[spk_ID[i][:-4]] = spectral_bandwidth
-        # with open('spectral_bandwidth.txt', 'w') as f:
+        # with open('spectral_centroid.txt', 'w') as f:
         #     for key, value in data1.items():
         #         f.write('%s:%s\n' % (key, value))
         # with open('rolloff.txt', 'w') as f:
@@ -131,36 +138,35 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # with open('mfccs.txt', 'w') as f:
         #     for key, value in data3.items():
         #         f.write('%s:%s\n' % (key, value))
+
     def playAudio(self, song):
         sd.play(song, self.freq)
 
-
     def upload(self):
-        self.fileName = QFileDialog.getOpenFileName(None, "Load", "/home/menna/Songs","Track(*.wav)")
+        self.fileName = QFileDialog.getOpenFileName(None, "Load", "/home/menna/Songs", "Track(*.wav)")
         print(self.fileName)
-        self.wavefile2, self.freq = lr.load(self.fileName[0],duration=60.0)
+        self.wavefile2, self.freq = lr.load(self.fileName[0], duration=60.0)
         self.time = np.arange(0, len(self.wavefile2)) / self.freq
         if self.flag1 == 0:
-            self.music1=self.wavefile2
-            self.flag1 =1
+            self.music1 = self.wavefile2
+            self.flag1 = 1
         else:
-            self.music2=self.wavefile2
+            self.music2 = self.wavefile2
             self.flag1 = 0
 
     def ratio(self):
         self.ratio1 = float(float(self.ui.slider1.value()) / 100.0)
-        print("Music1ratio=",self.ratio1)
-        self.ratio2 = float(1-self.ratio1)
+        print("Music1ratio=", self.ratio1)
+        self.ratio2 = float(1 - self.ratio1)
         print("Music2ratio=", self.ratio2)
 
     def mix(self):
         self.result = self.ratio1 * self.music1 + self.ratio2 * self.music2
         self.Spectrogram(self.result)
 
-
-    def Spectrogram(self,input):
-        self.spectrogram=lr.amplitude_to_db(np.abs(lr.stft(input)), ref=np.max)
-        self.spectrogram1 =np.abs(lr.stft(input))
+    def Spectrogram(self, input):
+        self.spectrogram = lr.amplitude_to_db(np.abs(lr.stft(input)), ref=np.max)
+        self.spectrogram1 = np.abs(lr.stft(input))
 
         ###used this code to generate spec image to make sure that its the same as the original ones
         # frequencies,times, self.spectrogram = signal.spectrogram(input, self.freq)
@@ -168,7 +174,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # plt.ylabel('freq')
         # plt.xlabel('time')
         # plt.savefig('spectrogram.png', bbox_inches='tight', dpi=300, frameon='false')
-        #plt.show()
+        # plt.show()
 
     def compare(self):
         if self.ui.Hash.isChecked():
@@ -176,61 +182,50 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         elif self.ui.MainFeatures.isChecked():
             self.mainfeatureSelect(self.spectrogram1, self.freq, mode="mfccs")
         elif self.ui.Both.isChecked():
-            pass
+            self.both()
+
     def hash(self):
         # to read the hash file
-        data1 = dict()
+        self.data1 = dict()
         with open('arrayhash.txt') as raw_data:
             for item in raw_data:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    data1[key] = value
+                    self.data1[key] = value
                 else:
                     pass  # deal with bad lines of text here
 
-        data2 = dict()
+        self.data2 = dict()
         with open('arrayhashd.txt') as raw_data:
             for item in raw_data:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    data2[key] = value
+                    self.data2[key] = value
                 else:
                     pass  # deal with bad lines of text here
 
         # hash the spec of the new song
         phasher = PHash()
-        encoding1 = phasher.encode_image(image_array=self.spectrogram)
+        self.encoding1 = phasher.encode_image(image_array=self.spectrogram)
 
         dhasher = DHash()
-        encoding2 = dhasher.encode_image(image_array=self.spectrogram)
+        self.encoding2 = dhasher.encode_image(image_array=self.spectrogram)
         # compare btw the hashes
-        data = dict()
-        for i, j in data1.items():
-            data[i] = str((self.similar(encoding1, data1[i]) + self.similar(encoding2, data2[i])) / 2.0)
-        # ordering the results
-        sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
-        y = 1
-        # showing the results
-        for i, j in sorted_d.items():
-            if y == 11:
-                break
-            else:
-                self.ui.comparisontable.setItem(y, 0, QTableWidgetItem(i))
-                self.ui.comparisontable.setItem(y, 1, QTableWidgetItem(j))
-            y = y + 1
-    def similar(self,a, b):
+        self.compareResult(0)
+
+    def similar(self, a, b):
         return SequenceMatcher(None, a, b).ratio()
 
-    def mainfeatureSelect(self,spectogram, freq, mode):
-        phasher =PHash()
-        data = dict()
+    def mainfeatureSelect(self, spectogram, freq, mode):
+        phasher = PHash()
+        self.data = dict()
 
         if mode == "spectralCentroid":
             with open('centroid.txt') as raw_data:
                 for item in raw_data:
                     if ':' in item:
                         key, value = item.split(':', 1)
-                        data[key] = value
+                        self.data[key] = value
                     else:
                         pass  # deal with bad lines of text here
             featureExtraction = lr.feature.spectral_centroid(S=spectogram, sr=freq)
@@ -239,7 +234,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 for item in raw_data:
                     if ':' in item:
                         key, value = item.split(':', 1)
-                        data[key] = value
+                        self.data[key] = value
                     else:
                         pass  # deal with bad lines of text here
             # spectral_rolloff
@@ -250,7 +245,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 for item in raw_data:
                     if ':' in item:
                         key, value = item.split(':', 1)
-                        data[key] = value
+                        self.data[key] = value
                     else:
                         pass  # deal with bad lines of text here
             # mfccs
@@ -261,39 +256,52 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 for item in raw_data:
                     if ':' in item:
                         key, value = item.split(':', 1)
-                        data[key] = value
+                        self.data[key] = value
                     else:
                         pass  # deal with bad lines of text here
             featureExtraction, magnitudes = lr.piptrack(S=spectogram, sr=freq, fmin=20, fmax=20000)
             print(np.shape(featureExtraction))
-        elif mode== 'spectral_bandwidth':
+        elif mode == 'spectral_bandwidth':
             with open('spectral_bandwidth.txt') as raw_data:
                 for item in raw_data:
                     if ':' in item:
                         key, value = item.split(':', 1)
-                        data[key] = value
+                        self.data[key] = value
                     else:
                         pass  # deal with bad lines of text here
-            featureExtraction=lr.feature.spectral_bandwidth(S=spectogram)
-        feature=phasher.encode_image(image_array=featureExtraction)
-        for i,j in data.items():
-            data[i] = str(self.similar(feature,j))
-        #ordering the results
-        sorted_d = dict(sorted(data.items(), key=operator.itemgetter(1), reverse=True))
-        y=1
-        #showing the results
-        for i,j in sorted_d.items():
-            if y==11:
+            featureExtraction = lr.feature.spectral_bandwidth(S=spectogram)
+        self.feature = phasher.encode_image(image_array=featureExtraction)
+        self.compareResult(1)
+        return feature
+
+    def compareResult(self, checkboxOption):
+        for i, j in self.data1.items():
+            if checkboxOption == 0:
+                self.data[i] = str(
+                    (self.similar(self.encoding1, self.data1[i]) + self.similar(self.encoding2, self.data2[i])) / 2.0)
+            elif checkboxOption == 1:
+                self.data[i] = str(self.similar(self.feature, j))
+            elif checkboxOption == 2:
+                self.data[i] = str((self.similar(self.encoding1, self.data1[i]) + self.similar(self.encoding2,
+                                                                                               self.data2[
+                                                                                                   i]) + self.similar(
+                    feature, j)) / 3.0)
+        # ordering the results
+        sorted_d = dict(sorted(self.data.items(), key=operator.itemgetter(1), reverse=True))
+        y = 1
+        # showing the results
+        for i, j in sorted_d.items():
+            if y == 11:
                 break
             else:
                 self.ui.comparisontable.setItem(y, 0, QTableWidgetItem(i))
                 self.ui.comparisontable.setItem(y, 1, QTableWidgetItem(j))
-            y=y+1
+            y = y + 1
 
-        return feature
-        # Pitch Tracing
-
-        # print(pitches)
+    def both(self):
+        self.mainfeatureSelect(self.spectrogram1, self.freq, mode="mfccs")
+        self.hash()
+        self.compareResult(2)
 
 
 def main():
